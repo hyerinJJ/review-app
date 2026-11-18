@@ -97,6 +97,10 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .ai-line{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--sub)}
 .ai-line .grow{flex:1}
 .ai-line button{color:var(--blue);font-weight:700;font-size:12px}
+.tone{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
+.tone button{padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--sub);background:var(--card)}
+.tone button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue);font-weight:700}
+.tone button:disabled{opacity:.5}
 .voice-card{background:var(--bg-soft);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .mini-q{display:flex;align-items:center;gap:6px}
 .mini-q span{background:var(--card);padding:6px 10px;border-radius:3px 12px 12px 12px;font-size:12px}
@@ -185,6 +189,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
       </div>
       <div id="pane-direct" hidden>
         <div class="box">
+          <div class="tone" id="tone" hidden>말투 <button data-tone="basic" aria-pressed="true">기본</button><button data-tone="casual" aria-pressed="false">편하게</button><button data-tone="formal" aria-pressed="false">정중하게</button></div>
           <input class="title" id="r-title" placeholder="한 줄 요약 (선택)" maxlength="30" hidden>
           <textarea id="r-body" rows="7" placeholder="맛, 먹는 방법, 구매 이유, 아쉬운 점을 담아 적어주세요."></textarea>
           <div class="chips" id="chips-direct"></div>
@@ -286,7 +291,7 @@ $('redo').onclick=e=>startChat(e,true);
 let buf='',partial='',silence=null,liveEl=null;
 // 서버 함수(/api/ai)가 Claude API를 대신 불러요. 실패하면 미리 정해 둔 질문으로 이어가요.
 async function api(task){const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({task,rating:st.rating,taste:st.taste,turns:st.turns})});if(!r.ok)throw new Error('api '+r.status);return r.json();}
+  body:JSON.stringify({task,rating:st.rating,taste:st.taste,turns:st.turns,tone:st.tone||'basic'})});if(!r.ok)throw new Error('api '+r.status);return r.json();}
 // 브라우저 내장 음성 인식(Chrome·Edge·Safari). 지원하지 않으면 null → 키보드 입력.
 function makeSpeech(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
   let rec=null,on=false,wantOn=false,endReason='';const h={p:[],f:[],s:[]};const emit=(k,e)=>h[k].forEach(fn=>fn(e));
@@ -398,10 +403,20 @@ $('finish').onclick=async()=>{
   try{r=await api('summary');}catch(e){r=null;}
   if(!r||typeof r.body!=='string'){const said=st.turns.filter(t=>t.role==='user').map(t=>t.content.replace(/[.!?]?$/,'.')).join(' ');r={title:'',body:said};}
   $('r-title').hidden=false;$('r-title').value=(r.title||'').slice(0,30);$('r-body').value=r.body.trim();
-  $('ai-line').hidden=false;setMode('direct');renderDirectChips();
+  $('ai-line').hidden=false;$('tone').hidden=false;setMode('direct');renderDirectChips();
   for(const k in st.covered) if(st.covered[k]) $('chips-direct').children[TOPICS.findIndex(t=>t[0]===k)].classList.add('done');
   show('s-write');updateSubmit();toast('대화 내용으로 리뷰를 완성했어요');
   btn.textContent='대화 마치기';};
+// 말투 바꾸기: 같은 대화로 리뷰를 다시 정리해요
+for(const b of $('tone').querySelectorAll('button')) b.onclick=async()=>{
+  if(b.getAttribute('aria-pressed')==='true')return;
+  const btns=[...$('tone').querySelectorAll('button')];btns.forEach(x=>x.disabled=true);
+  const prev=st.tone||'basic';st.tone=b.dataset.tone;btns.forEach(x=>x.setAttribute('aria-pressed',x===b));
+  const before=$('r-body').value;$('r-body').value='말투를 바꾸고 있어요…';
+  let r=null;try{r=await api('summary');}catch(e){r=null;}
+  if(r&&typeof r.body==='string'){$('r-title').value=(r.title||'').slice(0,30);$('r-body').value=r.body.trim();}
+  else{$('r-body').value=before;st.tone=prev;btns.forEach(x=>x.setAttribute('aria-pressed',x.dataset.tone===prev));toast('말투를 바꾸지 못했어요. 잠시 후 다시 눌러주세요');}
+  btns.forEach(x=>x.disabled=false);updateSubmit();};
 </script>
 
 </body>
