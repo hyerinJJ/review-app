@@ -350,7 +350,10 @@ async function submitAnswer(text){
   buf='';partial='';
   st.turns.push({role:'user',content:text});
   // 재구매 질문에 방금 답했으면 대화는 여기서 끝
-  if(st.askedRebuy){st.rebuyAnswered=true;const done='좋아요, 충분히 모였어요! 대화를 마쳐주세요.';st.turns.push({role:'assistant',content:done});addMsg('ai',done);renderTopics();setStatus();return;}
+  // 재구매 답 이후에도 하고 싶은 말을 더 할 수 있어요. 더 한 말도 리뷰에 들어가요.
+  if(st.askedRebuy){const first=!st.rebuyAnswered;st.rebuyAnswered=true;
+    const reply=first?'충분히 모였어요! 더 하고 싶은 말이 있다면 해주시고, 없다면 대화를 마쳐주세요.':'네, 그 내용도 담을게요. 더 있으면 말씀해 주시고, 없다면 대화를 마쳐주세요.';
+    st.turns.push({role:'assistant',content:reply});addMsg('ai',reply);renderTopics();setStatus();return;}
   st.aiBusy=true;renderTopics();setStatus();
   const typing=document.createElement('div');typing.className='msg ai';typing.innerHTML=AV+'<div class="bub typing"><i></i><i></i><i></i></div>';$('chat').append(typing);scrollChat();
   let next=null;
@@ -375,7 +378,7 @@ function localNext(){const c=st.covered;st.pendingTopic=null;
   if(!c.usage) return ask('usage','주로 어떻게 데워서 드세요?',['전자레인지 1분 돌려요','샐러드에 올려 먹어요','냉동해두고 꺼내 먹어요']);
   if(!c.context) return ask('context','어떤 계기로 사게 되셨어요?',['다이어트 중이라서요','운동하고 먹으려고요','아침 대용으로요']);
   if(!c.cons) return ask('cons','드시다가 아쉬웠던 순간이 있었어요?',['계속 먹으니 질려요','특별히 없었어요','양이 조금 적어요']);
-  return{question:'충분히 모였어요! 대화를 마쳐주세요.',chips:[]};}
+  return{question:'충분히 모였어요! 더 하고 싶은 말이 있다면 해주시고, 없다면 대화를 마쳐주세요.',chips:[]};}
 
 $('finish').onclick=async()=>{
   if(dict?.active()) dict.stop();
