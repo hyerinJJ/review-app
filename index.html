@@ -316,10 +316,10 @@ function scrollChat(){const c=$('chat');c.scrollTop=c.scrollHeight;}
 function quick(chips){const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
 function renderTopics(){$('chips-chat').innerHTML=chipsHTML(st.covered);const all=Object.values(st.covered).every(Boolean);const any=st.turns.some(t=>t.role==='user');
   $('finish').disabled=!any||st.aiBusy;$('finish').textContent=all?'대화 마치고 리뷰 완성하기':'대화 마치기';}
-function firstQuestion(){if(st.taste==='맛있어요')return['어떤 점이 특히 맛있었나요?',['촉촉해요','간이 딱 좋아요','맛 종류가 다양해요']];
-  if(st.taste==='별로예요')return['맛은 어떤 점이 아쉬웠나요?',['퍽퍽해요','너무 짜요','맛이 밋밋해요']];
-  if(st.taste==='보통이에요')return['맛은 어땠는지 조금 더 들려주세요.',['무난해요','간이 약해요','맛에 따라 달라요']];
-  return['드셔보니 맛은 어땠나요?',['맛있어요','보통이에요','별로예요']];}
+function firstQuestion(){if(st.taste==='맛있어요')return['어떤 맛이 제일 손이 갔어요?',['갈릭이 제일 좋아요','식감이 촉촉해요','블랙페퍼가 좋아요']];
+  if(st.taste==='별로예요')return['드셔보니 맛은 어떤 점이 아쉬웠어요?',['식감이 퍽퍽해요','간이 너무 짜요','맛이 밋밋해요']];
+  if(st.taste==='보통이에요')return['처음 드셨을 때 맛이 어땠어요?',['무난하게 먹을 만해요','간이 좀 약해요','맛마다 차이가 커요']];
+  return['처음 드셨을 때 맛이 어땠어요?',['식감이 촉촉해요','간이 딱 좋아요','조금 퍽퍽해요']];}
 function startChat(e,again){
   // 마이크는 클릭 안에서 바로 켜야 해서 다른 작업보다 먼저 호출
   if(dict&&!dict.active()) dict.start({language:'ko'}).catch(err=>{if(err.code==='unavailable'||err.code==='not_granted'){micMsg='음성 입력을 쓸 수 없어요. 키보드로 답해주세요.';openKeyboard();setStatus();}});
@@ -344,13 +344,13 @@ async function submitAnswer(text){
   if(liveEl){liveEl.querySelector('.bub').classList.remove('live');liveEl.querySelector('.bub').textContent=text;liveEl=null;}else addMsg('me',text);
   buf='';partial='';
   st.turns.push({role:'user',content:text});
-  const local=detect(text);for(const k in local) if(local[k]) st.covered[k]=true;
   st.aiBusy=true;renderTopics();setStatus();
   const typing=document.createElement('div');typing.className='msg ai';typing.innerHTML=AV+'<div class="bub typing"><i></i><i></i><i></i></div>';$('chat').append(typing);scrollChat();
   let next=null;
   try{next=await api('next');}catch(e){next=null;}
   typing.remove();
-  if(!next||typeof next.question!=='string') next=localNext();
+  // AI가 답하지 못했을 때만 키워드로 칩을 채우고 정해 둔 질문으로 이어가요
+  if(!next||typeof next.question!=='string'){const local=detect(text);for(const k in local) if(local[k]) st.covered[k]=true;next=localNext();}
   if(next.covered) for(const k of ['taste','storage','cons']) if(next.covered[k]) st.covered[k]=true;
   const q=next.question.trim();st.turns.push({role:'assistant',content:q});addMsg('ai',q);
   const all=Object.values(st.covered).every(Boolean);
@@ -359,9 +359,9 @@ async function submitAnswer(text){
   if(buf||partial){renderLive();armSilence();}
 }
 function localNext(){const c=st.covered;
-  if(!c.taste) return{question:'맛은 어땠는지 조금 더 들려주세요.',chips:['촉촉해요','간이 좋아요','퍽퍽해요']};
-  if(!c.storage) return{question:'보관이나 조리는 편하셨나요?',chips:['개별포장이라 편해요','전자레인지로 데워요','냉동 보관해요']};
-  if(!c.cons) return{question:'아쉬운 점도 있었나요?',chips:['조금 짰어요','특별히 없어요','가격이 아쉬워요']};
+  if(!c.taste) return{question:'어떤 맛이나 식감이 기억에 남아요?',chips:['식감이 촉촉해요','갈릭이 제일 좋아요','조금 퍽퍽해요']};
+  if(!c.storage) return{question:'주로 언제, 어떻게 드세요?',chips:['아침 대신 먹어요','전자레인지로 데워요','운동 후에 먹어요']};
+  if(!c.cons) return{question:'드시다가 아쉬웠던 순간이 있었어요?',chips:['훈제맛이 좀 짰어요','특별히 없었어요','양이 조금 적어요']};
   return{question:'충분히 모였어요! 대화를 마쳐주세요.',chips:[]};}
 
 $('finish').onclick=async()=>{
