@@ -240,7 +240,7 @@ const AV='<svg class="av" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fil
 const PRODUCT='득근파티 통 닭가슴살 6종 혼합(100g, 54개)';
 const TOPICS=[['taste','맛'],['usage','먹는 법'],['context','구매 이유'],['cons','아쉬운 점']];
 const KW={taste:/맛|촉촉|퍽퍽|식감|부드|간이|짜|싱거|달|훈제|갈릭|페퍼|매콤|담백|질기/,usage:/보관|냉동|냉장|전자레인지|렌지|데우|조리|에어프라이|포장|개별|해동|꺼내|샐러드|볶음/,
-  context:/사서|샀|구매|주문|다이어트|운동|헬스|아침|점심|저녁|간식|가족|아이|혼자|전에|예전|비교|보다|원래/,cons:/아쉽|아쉬|별로|단점|불편|짰|짜요|비싸|질기|다만|근데|그런데|빼고|없어요|없었/};
+  context:/사서|샀|구매|주문|다이어트|운동|헬스|아침|점심|저녁|간식|가족|아이|혼자|전에|예전|비교|보다|원래/,cons:/아쉽|아쉬|별로|단점|불편|짰|짜요|비싸|질기|질려|질리|퍽퍽|다만|근데|그런데|빼고|없어요|없었/};
 const NO_TOPICS=()=>({taste:false,usage:false,context:false,cons:false});
 const st={rating:0,taste:null,seller:null,mode:'voice',turns:[],covered:NO_TOPICS(),aiBusy:false,result:null,files:[]};
 const show=id=>{for(const s of document.querySelectorAll('.screen')) s.hidden=s.id!==id;};
@@ -320,7 +320,7 @@ function addMsg(role,text){const d=document.createElement('div');d.className='ms
 function scrollChat(){const c=$('chat');c.scrollTop=c.scrollHeight;}
 function quick(chips){const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
 function renderTopics(){$('chips-chat').innerHTML=chipsHTML(st.covered);const all=Object.values(st.covered).every(Boolean);const any=st.turns.some(t=>t.role==='user');
-  $('finish').disabled=!any||st.aiBusy;$('finish').textContent=all?'대화 마치고 리뷰 완성하기':'대화 마치기';}
+  $('finish').disabled=!any||st.aiBusy;$('finish').textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 마치기';}
 function firstQuestion(){if(st.taste==='맛있어요')return['드셔보니 어떤 점이 맛있었어요?',['식감이 촉촉해요','간이 딱 좋아요','생각보다 담백해요']];
   if(st.taste==='별로예요')return['드셔보니 맛은 어떤 점이 아쉬웠어요?',['식감이 퍽퍽해요','간이 너무 짜요','맛이 밋밋해요']];
   if(st.taste==='보통이에요')return['처음 드셨을 때 맛이 어땠어요?',['무난하게 먹을 만해요','간이 좀 약해요','맛마다 차이가 커요']];
@@ -330,7 +330,7 @@ function startChat(e,again){
   if(dict&&!dict.active()) dict.start({language:'ko'}).catch(err=>{if(err.code==='unavailable'||err.code==='not_granted'){micMsg='음성 입력을 쓸 수 없어요. 키보드로 답해주세요.';openKeyboard();setStatus();}});
   show('s-chat');
   if(!again&&st.turns.length) {renderTopics();setStatus();return;}
-  $('chat').innerHTML='';st.turns=[];st.covered=NO_TOPICS();st.askedRebuy=false;buf='';partial='';liveEl=null;
+  $('chat').innerHTML='';st.turns=[];st.covered=NO_TOPICS();st.askedRebuy=false;st.rebuyAnswered=false;buf='';partial='';liveEl=null;
   const [q,chips]=firstQuestion();st.turns.push({role:'assistant',content:q});addMsg('ai',q);quick(chips);renderTopics();setStatus();
   if(!dict) openKeyboard();}
 $('start-voice').onclick=e=>startChat(e,false);
@@ -349,25 +349,32 @@ async function submitAnswer(text){
   if(liveEl){liveEl.querySelector('.bub').classList.remove('live');liveEl.querySelector('.bub').textContent=text;liveEl=null;}else addMsg('me',text);
   buf='';partial='';
   st.turns.push({role:'user',content:text});
+  // 재구매 질문에 방금 답했으면 대화는 여기서 끝
+  if(st.askedRebuy){st.rebuyAnswered=true;const done='좋아요, 충분히 모였어요! 대화를 마쳐주세요.';st.turns.push({role:'assistant',content:done});addMsg('ai',done);renderTopics();setStatus();return;}
   st.aiBusy=true;renderTopics();setStatus();
   const typing=document.createElement('div');typing.className='msg ai';typing.innerHTML=AV+'<div class="bub typing"><i></i><i></i><i></i></div>';$('chat').append(typing);scrollChat();
   let next=null;
   try{next=await api('next');}catch(e){next=null;}
   typing.remove();
   // AI가 답하지 못했을 때만 키워드로 칩을 채우고 정해 둔 질문으로 이어가요
-  if(!next||typeof next.question!=='string'){const local=detect(text);for(const k in local) if(local[k]) st.covered[k]=true;next=localNext();}
-  if(next.covered) for(const k of ['taste','storage','cons']) if(next.covered[k]) st.covered[k]=true;
+  if(!next||typeof next.question!=='string'){if(st.pendingTopic)st.covered[st.pendingTopic]=true;const local=detect(text);for(const k in local) if(local[k]) st.covered[k]=true;next=localNext();}
+  if(next.covered) for(const k of TOPICS.map(t=>t[0])) if(next.covered[k]) st.covered[k]=true;
+  // 항목이 다 채워졌거나 AI가 끝내려 하면, 끝내기 전에 재구매 의사를 꼭 물어요
+  const answers=st.turns.filter(t=>t.role==='user').length;
+  if(Object.values(st.covered).every(Boolean)||/충분히 모였어요/.test(next.question)||answers>=7){
+    st.askedRebuy=true;next={question:'마지막으로, 다시 산다면 또 이걸 고르실 것 같아요?',chips:['또 살 거예요','다른 걸로 바꿀래요','할인하면 살게요']};}
   const q=next.question.trim();st.turns.push({role:'assistant',content:q});addMsg('ai',q);
   if(Array.isArray(next.chips)&&next.chips.length) quick(next.chips.slice(0,3).map(String));
   st.aiBusy=false;renderTopics();setStatus();
   if(buf||partial){renderLive();armSilence();}
 }
-function localNext(){const c=st.covered;
-  if(!c.taste) return{question:'어떤 맛이나 식감이 기억에 남아요?',chips:['식감이 촉촉해요','간이 딱 좋아요','조금 퍽퍽해요']};
-  if(!c.usage) return{question:'주로 어떻게 데워서 드세요?',chips:['전자레인지 1분 돌려요','샐러드에 올려 먹어요','냉동해두고 꺼내 먹어요']};
-  if(!c.context) return{question:'어떤 계기로 사게 되셨어요?',chips:['다이어트 중이라서요','운동하고 먹으려고요','아침 대용으로요']};
-  if(!c.cons) return{question:'드시다가 아쉬웠던 순간이 있었어요?',chips:['계속 먹으니 질려요','특별히 없었어요','양이 조금 적어요']};
-  if(!st.askedRebuy){st.askedRebuy=true;return{question:'다시 산다면 또 이걸 고르실 것 같아요?',chips:['또 살 거예요','다른 걸로 바꿀래요','할인하면 살게요']};}
+// AI가 응답하지 못할 때 쓰는 정해 둔 질문. 물어본 항목은 답을 받으면 채운 것으로 봐요(같은 질문 반복 방지).
+function localNext(){const c=st.covered;st.pendingTopic=null;
+  const ask=(k,question,chips)=>{st.pendingTopic=k;return{question,chips};};
+  if(!c.taste) return ask('taste','어떤 맛이나 식감이 기억에 남아요?',['식감이 촉촉해요','간이 딱 좋아요','조금 퍽퍽해요']);
+  if(!c.usage) return ask('usage','주로 어떻게 데워서 드세요?',['전자레인지 1분 돌려요','샐러드에 올려 먹어요','냉동해두고 꺼내 먹어요']);
+  if(!c.context) return ask('context','어떤 계기로 사게 되셨어요?',['다이어트 중이라서요','운동하고 먹으려고요','아침 대용으로요']);
+  if(!c.cons) return ask('cons','드시다가 아쉬웠던 순간이 있었어요?',['계속 먹으니 질려요','특별히 없었어요','양이 조금 적어요']);
   return{question:'충분히 모였어요! 대화를 마쳐주세요.',chips:[]};}
 
 $('finish').onclick=async()=>{
