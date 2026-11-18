@@ -87,6 +87,9 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .box input.title{font-weight:700}
 .box textarea:focus,.box input.title:focus{outline:none}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.topics{white-space:nowrap}
+.topics .chips{flex-wrap:nowrap;overflow-x:auto;min-width:0;scrollbar-width:none}
+.chip{white-space:nowrap;flex:none}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;background:var(--seg);font-size:12px;color:var(--sub);transition:color .2s}
 .chip svg{width:12px;height:12px;stroke:var(--ph)}
 .chip.done{color:var(--ink);font-weight:500}
@@ -183,7 +186,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
       <div id="pane-direct" hidden>
         <div class="box">
           <input class="title" id="r-title" placeholder="한 줄 요약 (선택)" maxlength="30" hidden>
-          <textarea id="r-body" rows="6" placeholder="맛, 조리·보관, 아쉬운 점을 담아 적어주세요."></textarea>
+          <textarea id="r-body" rows="7" placeholder="맛, 먹는 방법, 구매 이유, 아쉬운 점을 담아 적어주세요."></textarea>
           <div class="chips" id="chips-direct"></div>
           <div class="ai-line" id="ai-line" hidden><svg width="12" height="12" viewBox="0 0 16 16"><path d="M8 1.5l1.6 4.4 4.4 1.6-4.4 1.6L8 13.5 6.4 9.1 2 7.5l4.4-1.6z" fill="var(--blue)"/></svg><span class="grow">AI가 정리한 리뷰예요</span><button id="redo">다시 대화하기</button></div>
         </div>
@@ -235,9 +238,11 @@ const CHECK='<svg viewBox="0 0 12 12" fill="none" stroke-width="1.6" stroke-line
 const THUMB='<svg viewBox="0 0 16 16" fill="none" stroke-width="1.2" stroke-linejoin="round"><path d="M5 7l2.5-5c1 0 1.7.8 1.5 1.8L8.6 6H12a1.5 1.5 0 0 1 1.5 1.8l-.9 4.6A1.5 1.5 0 0 1 11.1 14H5zM2.5 7H5v7H2.5z"/></svg>';
 const AV='<svg class="av" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="var(--blue-soft)"/><path d="M14 6.5l1.7 4.8 4.8 1.7-4.8 1.7L14 19.5l-1.7-4.8L7.5 13l4.8-1.7z" fill="var(--blue)"/></svg>';
 const PRODUCT='득근파티 통 닭가슴살 6종 혼합(100g, 54개)';
-const TOPICS=[['taste','맛'],['storage','조리·보관'],['cons','아쉬운 점']];
-const KW={taste:/맛|촉촉|퍽퍽|식감|부드|간이|짜|싱거|달|훈제|갈릭|페퍼|매콤|담백|질기/,storage:/보관|냉동|냉장|전자레인지|렌지|데우|조리|에어프라이|포장|개별|해동|꺼내/,cons:/아쉽|아쉬|별로|단점|불편|짰|짜요|비싸|질기|다만|근데|그런데|빼고|없어요|없었/};
-const st={rating:0,taste:null,seller:null,mode:'voice',turns:[],covered:{taste:false,storage:false,cons:false},aiBusy:false,result:null,files:[]};
+const TOPICS=[['taste','맛'],['usage','먹는 법'],['context','구매 이유'],['cons','아쉬운 점']];
+const KW={taste:/맛|촉촉|퍽퍽|식감|부드|간이|짜|싱거|달|훈제|갈릭|페퍼|매콤|담백|질기/,usage:/보관|냉동|냉장|전자레인지|렌지|데우|조리|에어프라이|포장|개별|해동|꺼내|샐러드|볶음/,
+  context:/사서|샀|구매|주문|다이어트|운동|헬스|아침|점심|저녁|간식|가족|아이|혼자|전에|예전|비교|보다|원래/,cons:/아쉽|아쉬|별로|단점|불편|짰|짜요|비싸|질기|다만|근데|그런데|빼고|없어요|없었/};
+const NO_TOPICS=()=>({taste:false,usage:false,context:false,cons:false});
+const st={rating:0,taste:null,seller:null,mode:'voice',turns:[],covered:NO_TOPICS(),aiBusy:false,result:null,files:[]};
 const show=id=>{for(const s of document.querySelectorAll('.screen')) s.hidden=s.id!==id;};
 function toast(t){$('toast-text').textContent=t;$('toast').classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').classList.remove('show'),2200);}
 
@@ -271,9 +276,9 @@ $('r-body').oninput=()=>{renderDirectChips();updateSubmit();};
 function renderDirectChips(){$('chips-direct').innerHTML=chipsHTML(detect($('r-body').value));}
 function updateSubmit(){$('submit').disabled=!(st.mode==='direct'&&$('r-body').value.trim().length>=10);}
 renderDirectChips();
-$('submit').onclick=()=>{const t=$('r-title').value.trim();$('done-review').innerHTML='';
-  if(t){const b=document.createElement('b');b.textContent=t;$('done-review').append(b,document.createElement('br'));}
-  $('done-review').append($('r-body').value.trim());show('s-done');};
+$('submit').onclick=()=>{const t=$('r-title').value.trim(),d=$('done-review');d.innerHTML='';
+  if(t){const b=document.createElement('b');b.textContent=t;d.append(b,document.createElement('br'));}
+  const p=document.createElement('div');p.style.whiteSpace='pre-line';p.textContent=$('r-body').value.trim();d.append(p);show('s-done');};
 $('restart').onclick=()=>location.reload();
 $('redo').onclick=e=>startChat(e,true);
 
@@ -325,7 +330,7 @@ function startChat(e,again){
   if(dict&&!dict.active()) dict.start({language:'ko'}).catch(err=>{if(err.code==='unavailable'||err.code==='not_granted'){micMsg='음성 입력을 쓸 수 없어요. 키보드로 답해주세요.';openKeyboard();setStatus();}});
   show('s-chat');
   if(!again&&st.turns.length) {renderTopics();setStatus();return;}
-  $('chat').innerHTML='';st.turns=[];st.covered={taste:false,storage:false,cons:false};buf='';partial='';liveEl=null;
+  $('chat').innerHTML='';st.turns=[];st.covered=NO_TOPICS();buf='';partial='';liveEl=null;
   const [q,chips]=firstQuestion();st.turns.push({role:'assistant',content:q});addMsg('ai',q);quick(chips);renderTopics();setStatus();
   if(!dict) openKeyboard();}
 $('start-voice').onclick=e=>startChat(e,false);
@@ -360,7 +365,8 @@ async function submitAnswer(text){
 }
 function localNext(){const c=st.covered;
   if(!c.taste) return{question:'어떤 맛이나 식감이 기억에 남아요?',chips:['식감이 촉촉해요','갈릭이 제일 좋아요','조금 퍽퍽해요']};
-  if(!c.storage) return{question:'주로 언제, 어떻게 드세요?',chips:['아침 대신 먹어요','전자레인지로 데워요','운동 후에 먹어요']};
+  if(!c.usage) return{question:'주로 어떻게 데워서 드세요?',chips:['전자레인지 1분 돌려요','샐러드에 올려 먹어요','냉동해두고 꺼내 먹어요']};
+  if(!c.context) return{question:'어떤 계기로 사게 되셨어요?',chips:['다이어트 중이라서요','운동하고 먹으려고요','아침 대용으로요']};
   if(!c.cons) return{question:'드시다가 아쉬웠던 순간이 있었어요?',chips:['훈제맛이 좀 짰어요','특별히 없었어요','양이 조금 적어요']};
   return{question:'충분히 모였어요! 대화를 마쳐주세요.',chips:[]};}
 
