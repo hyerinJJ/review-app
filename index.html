@@ -323,7 +323,7 @@ function renderLive(){if(st.aiBusy)return;const t=(buf+(partial?(buf?' ':'')+par
   liveEl.querySelector('.bub').textContent=t;scrollChat();}
 function addMsg(role,text){if(role==='ai'&&text)window.RLOG&&RLOG.ev('question',{v:text});const d=document.createElement('div');d.className='msg '+role;d.innerHTML=(role==='ai'?AV:'')+'<div class="bub"></div>';d.querySelector('.bub').textContent=text;$('chat').append(d);scrollChat();return d;}
 function scrollChat(){const c=$('chat');c.scrollTop=c.scrollHeight;}
-function quick(chips){window.RLOG&&RLOG.ev('examples',{v:chips.join(' | ')});const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();window.ansSrc='chip';submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
+function quick(chips){return; /* 답변 예시는 보여주지 않음 */const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();window.ansSrc='chip';submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
 function renderTopics(){$('chips-chat').innerHTML=chipsHTML(st.covered);const all=Object.values(st.covered).every(Boolean);const any=st.turns.some(t=>t.role==='user');
   $('finish').disabled=!any||st.aiBusy;$('finish').textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 마치기';}
 function firstQuestion(){if(st.taste==='맛있어요')return['드셔보니 어떤 점이 맛있었어요?',['식감이 촉촉해요','간이 딱 좋아요','생각보다 담백해요']];
