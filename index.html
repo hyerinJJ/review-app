@@ -316,14 +316,14 @@ let micMsg='';
 function listening(){return !!dict&&dict.active();}
 function setStatus(){const s=$('status'),t=$('status-text');const on=listening();s.classList.toggle('on',on&&!st.aiBusy);
   t.textContent=st.aiBusy?'질문을 준비하고 있어요':on?'듣고 있어요':micMsg||(dict?'눌러서 말하기':'키보드로 답해주세요');}
-function armSilence(){clearTimeout(silence);if(st.aiBusy)return;silence=setTimeout(()=>{if(!partial&&buf.trim())submitAnswer(buf.trim());},1700);}
+function armSilence(){clearTimeout(silence);if(st.aiBusy)return;silence=setTimeout(()=>{if(!partial&&buf.trim()){window.ansSrc='voice';submitAnswer(buf.trim());}},1700);}
 function renderLive(){if(st.aiBusy)return;const t=(buf+(partial?(buf?' ':'')+partial:'')).trim();
   if(!t){liveEl?.remove();liveEl=null;return;}
   if(!liveEl){liveEl=addMsg('me','');liveEl.querySelector('.bub').classList.add('live');}
   liveEl.querySelector('.bub').textContent=t;scrollChat();}
-function addMsg(role,text){const d=document.createElement('div');d.className='msg '+role;d.innerHTML=(role==='ai'?AV:'')+'<div class="bub"></div>';d.querySelector('.bub').textContent=text;$('chat').append(d);scrollChat();return d;}
+function addMsg(role,text){if(role==='ai'&&text)window.RLOG&&RLOG.ev('question',{v:text});const d=document.createElement('div');d.className='msg '+role;d.innerHTML=(role==='ai'?AV:'')+'<div class="bub"></div>';d.querySelector('.bub').textContent=text;$('chat').append(d);scrollChat();return d;}
 function scrollChat(){const c=$('chat');c.scrollTop=c.scrollHeight;}
-function quick(chips){const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
+function quick(chips){window.RLOG&&RLOG.ev('examples',{v:chips.join(' | ')});const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();window.ansSrc='chip';submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
 function renderTopics(){$('chips-chat').innerHTML=chipsHTML(st.covered);const all=Object.values(st.covered).every(Boolean);const any=st.turns.some(t=>t.role==='user');
   $('finish').disabled=!any||st.aiBusy;$('finish').textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 마치기';}
 function firstQuestion(){if(st.taste==='맛있어요')return['드셔보니 어떤 점이 맛있었어요?',['식감이 촉촉해요','간이 딱 좋아요','생각보다 담백해요']];
@@ -345,7 +345,7 @@ $('mic').onclick=()=>{if(!dict){openKeyboard();return;}
   if(dict.active()){dict.stop();}else{micMsg='';dict.start({language:'ko'}).catch(err=>{if(err.code!=='stopped'){micMsg=err.code==='not_granted'?'마이크가 꺼져 있어요. 키보드로 답해주세요.':'음성 입력이 안 돼요. 키보드로 답해주세요.';setStatus();openKeyboard();}});}};
 function openKeyboard(){$('type-row').hidden=false;}
 $('kb').onclick=()=>{const r=$('type-row');r.hidden=!r.hidden;if(!r.hidden)$('type-in').focus();};
-function sendTyped(){const v=$('type-in').value.trim();if(!v||st.aiBusy)return;$('type-in').value='';submitAnswer(v);}
+function sendTyped(){const v=$('type-in').value.trim();if(!v||st.aiBusy)return;$('type-in').value='';window.ansSrc='typed';submitAnswer(v);}
 $('type-send').onclick=sendTyped;$('type-in').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendTyped();};
 
 async function submitAnswer(text){
@@ -354,6 +354,7 @@ async function submitAnswer(text){
   if(liveEl){liveEl.querySelector('.bub').classList.remove('live');liveEl.querySelector('.bub').textContent=text;liveEl=null;}else addMsg('me',text);
   buf='';partial='';
   st.turns.push({role:'user',content:text});
+  window.RLOG&&RLOG.answer(text);
   // 재구매 질문에 방금 답했으면 대화는 여기서 끝
   // 재구매 답 이후에도 하고 싶은 말을 더 할 수 있어요. 더 한 말도 리뷰에 들어가요.
   if(st.askedRebuy){
@@ -405,7 +406,7 @@ $('finish').onclick=async()=>{
   $('r-title').hidden=false;$('r-title').value=(r.title||'').slice(0,30);$('r-body').value=r.body.trim();
   $('ai-line').hidden=false;$('tone').hidden=false;setMode('direct');renderDirectChips();
   for(const k in st.covered) if(st.covered[k]) $('chips-direct').children[TOPICS.findIndex(t=>t[0]===k)].classList.add('done');
-  show('s-write');updateSubmit();toast('대화 내용으로 리뷰를 완성했어요');
+  show('s-write');updateSubmit();toast('대화 내용으로 리뷰를 완성했어요');window.RLOG&&RLOG.summary($('r-title').value,$('r-body').value,!!(r&&r.title!==undefined&&r.body&&st.turns.length));
   btn.textContent='대화 마치기';};
 // 말투 바꾸기: 같은 대화로 리뷰를 다시 정리해요
 for(const b of $('tone').querySelectorAll('button')) b.onclick=async()=>{
@@ -414,9 +415,101 @@ for(const b of $('tone').querySelectorAll('button')) b.onclick=async()=>{
   const prev=st.tone||'basic';st.tone=b.dataset.tone;btns.forEach(x=>x.setAttribute('aria-pressed',x===b));
   const before=$('r-body').value;$('r-body').value='말투를 바꾸고 있어요…';
   let r=null;try{r=await api('summary');}catch(e){r=null;}
-  if(r&&typeof r.body==='string'){$('r-title').value=(r.title||'').slice(0,30);$('r-body').value=r.body.trim();}
+  if(r&&typeof r.body==='string'){$('r-title').value=(r.title||'').slice(0,30);$('r-body').value=r.body.trim();window.RLOG&&RLOG.tone(st.tone,$('r-body').value);}
   else{$('r-body').value=before;st.tone=prev;btns.forEach(x=>x.setAttribute('aria-pressed',x.dataset.tone===prev));toast('말투를 바꾸지 못했어요. 잠시 후 다시 눌러주세요');}
   btns.forEach(x=>x.disabled=false);updateSubmit();};
+</script>
+<script>
+/* ===== 연구 기록 (리뷰 작성 activity)
+   실험 사이트와 같은 구글 시트에 저장한다. 참여자 번호는 주소의 ?pid= 로 받고, 없으면 처음에 입력창을 띄운다.
+   직접 쓰기와 말로 쓰기를 각각 한 세션으로 기록한다. ===== */
+(function(){
+  const GAS_DEFAULT='https://script.google.com/macros/s/AKfycbxyfQUk-hnL_bw5A8YkMJ0WzpIEgVaC9BN5BHIvPckLGxJoOVtd8TAy8OJLpkH-zOi5/exec';
+  const PRODUCT_NAME='리뷰 작성';
+  const Q=new URLSearchParams(location.search);
+  const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+  if(Q.get('gs'))LS.set('rw_gas',Q.get('gs'));
+  const gas=()=>LS.get('rw_gas')||GAS_DEFAULT;
+  let pid=Q.get('pid')||'';
+  const T0=performance.now(),now=()=>Math.round((performance.now()-T0)/100)/10;
+  const pre=[];               // 세션 시작 전 행동 (평가 화면 등)
+  let S=null,buf=[],timer=0;  // 현재 세션
+  function post(o,beacon){const b=JSON.stringify(o);
+    if(beacon&&navigator.sendBeacon){try{if(navigator.sendBeacon(gas(),new Blob([b],{type:'text/plain;charset=utf-8'})))return Promise.resolve(true)}catch(e){}}
+    return fetch(gas(),{method:'POST',mode:'no-cors',keepalive:b.length<60000,headers:{'Content-Type':'text/plain;charset=utf-8'},body:b}).then(()=>true,()=>false);}
+  const base=(x=S)=>({sid:x.sid,pid,product:PRODUCT_NAME,condition:x.cond,slot:''});
+  function flush(beacon,x=S){clearTimeout(timer);timer=0;if(!x||!buf.length)return Promise.resolve();const o=base(x);o.kind='events';o.events=buf.splice(0);return post(o,beacon);}
+  function ev(type,d){const e=Object.assign({t:now(),type},d||{});if(!S){pre.push(e);return}buf.push(e);if(!timer)timer=setTimeout(flush,4000);}
+  function begin(cond){
+    if(S)return;
+    const pa=String(pid).replace(/[^A-Za-z0-9]/g,'')||'P';
+    S={sid:pa+'_write_'+(cond==='말로 쓰기'?'voice':'direct')+'_'+Date.now().toString(36),cond,start:now(),answers:[],src:{voice:0,typed:0,chip:0},
+       tones:0,redo:0,toDirect:0,summary:'',summaryTitle:'',inputs:0,firstInput:null};
+    const o=base();o.kind='start';o.session={started_at:new Date().toISOString(),ua:navigator.userAgent,screen:screen.width+'x'+screen.height,status:'진행 중'};
+    post(o);buf=pre.splice(0);ev('session_start',{v:cond});
+  }
+  function summaryRow(title,body){
+    const userChars=S.answers.reduce((a,x)=>a+x.text.replace(/\s/g,'').length,0);
+    const fin=(body||'').trim(),sum=S.summary.trim();
+    let edited='';
+    if(sum){let i=0;while(i<sum.length&&i<fin.length&&sum[i]===fin[i])i++;let j=0;while(j<sum.length-i&&j<fin.length-i&&sum[sum.length-1-j]===fin[fin.length-1-j])j++;edited=Math.max(sum.length-i-j,fin.length-i-j);}
+    return {rating:st.rating,taste:st.taste||'',seller:st.seller||'',
+      write_time_s:Math.round((now()-S.start)*10)/10,
+      participant_chars:S.cond==='말로 쓰기'?userChars:fin.replace(/\s/g,'').length,
+      answers:S.answers.length,answers_voice:S.src.voice,answers_typed:S.src.typed,answers_example:S.src.chip,
+      summary_chars:sum.replace(/\s/g,'').length||'',edited_chars_after_summary:edited,
+      tone_changes:S.tones,redo_chat:S.redo,switched_to_direct:S.toDirect,
+      topics_covered:Object.entries(st.covered||{}).filter(([,v])=>v).map(([k])=>k).join('|'),
+      final_chars:fin.replace(/\s/g,'').length,photos:st.files.length,
+      final_title:(title||'').trim(),final_body:fin};
+  }
+  window.RLOG={
+    ev,
+    answer(text){if(!S)begin('말로 쓰기');const src=window.ansSrc||'voice';window.ansSrc='voice';S.src[src]=(S.src[src]||0)+1;S.answers.push({t:now(),src,text});ev('answer',{v:text,src});},
+    summary(title,body,ok){if(!S)return;S.summary=body||'';S.summaryTitle=title||'';ev('summary',{v:body,title,ai:ok?1:0});},
+    tone(t,body){if(!S)return;S.tones++;S.summary=body||S.summary;ev('tone',{v:t});}
+  };
+  /* 화면 행동 */
+  const on=(id,type,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener(type,fn)};
+  on('stars','click',()=>setTimeout(()=>ev('rating',{v:st.rating}),0));
+  on('taste','click',()=>setTimeout(()=>ev('taste',{v:st.taste||''}),0));
+  on('seller','click',()=>setTimeout(()=>ev('seller',{v:st.seller||''}),0));
+  on('next','click',()=>ev('to_write'));
+  on('tab-direct','click',()=>{ev('tab',{v:'직접 쓰기'});if(!S)begin('직접 쓰기');});
+  on('tab-voice','click',()=>ev('tab',{v:'말로 쓰기'}));
+  on('start-voice','click',()=>{begin('말로 쓰기');ev('chat_start');});
+  on('redo','click',()=>{if(S){S.redo++;}ev('redo_chat');});
+  on('to-direct','click',()=>{if(S)S.toDirect=1;ev('to_direct');});
+  on('back-write','click',()=>ev('chat_back'));
+  on('kb','click',()=>ev('keyboard_toggle'));
+  on('mic','click',()=>ev('mic_toggle'));
+  on('attach','click',()=>ev('attach'));
+  let typing=0;
+  on('r-body','input',()=>{if(!S)return;if(S.firstInput===null){S.firstInput=now();ev('first_input');}S.inputs++;clearTimeout(typing);typing=setTimeout(()=>ev('edit',{v:document.getElementById('r-body').value.replace(/\s/g,'').length}),1500);});
+  on('r-body','paste',()=>ev('paste'));
+  on('submit','click',()=>{if(!S)begin(st.mode==='voice'?'말로 쓰기':'직접 쓰기');
+    const row=summaryRow(document.getElementById('r-title').value,document.getElementById('r-body').value);
+    ev('submit',{v:row.final_chars});const cur=S;S=null;
+    flush(false,cur).then(()=>{const o=base(cur);o.kind='session';o.status='완료';o.summary=row;
+      o.extra={answers:cur.answers,turns:st.turns,ai_summary:cur.summary,ai_summary_title:cur.summaryTitle};return post(o);});});
+  addEventListener('pagehide',()=>flush(true));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush(true)});
+  /* 참여자 번호 */
+  if(pid)LS.set('rw_pid',pid);
+  if(!pid){
+    const last=LS.get('rw_pid')||'';
+    const d=document.createElement('div');
+    d.setAttribute('role','dialog');d.setAttribute('aria-label','참여자 번호 입력');
+    d.style.cssText='position:fixed;inset:0;z-index:999;background:rgba(17,24,39,.55);display:grid;place-items:center;padding:24px';
+    d.innerHTML=`<form style="width:100%;max-width:320px;background:#fff;border-radius:16px;padding:20px;font:15px/1.5 inherit">
+      <b style="font-size:17px">참여자 번호</b><p style="margin:4px 0 12px;color:#6b7280;font-size:13.5px">연구진이 입력합니다. 기록에 이 번호가 붙어요.</p>
+      <input name="p" value="${last}" placeholder="예: A" autocomplete="off" style="width:100%;height:44px;padding:0 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:16px;box-sizing:border-box">
+      <button style="margin-top:12px;width:100%;height:46px;border:0;border-radius:10px;background:#111827;color:#fff;font-size:15px;font-weight:700">시작</button></form>`;
+    d.querySelector('form').onsubmit=e=>{e.preventDefault();const v=d.querySelector('input').value.trim();if(!v)return;pid=v;LS.set('rw_pid',v);
+      const u=new URL(location.href);u.searchParams.set('pid',v);history.replaceState(null,'',u);d.remove();};
+    document.body.append(d);setTimeout(()=>d.querySelector('input').focus(),50);
+  }
+})();
 </script>
 
 </body>
