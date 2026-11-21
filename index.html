@@ -453,7 +453,7 @@ for(const b of $('tone').querySelectorAll('button')) b.onclick=async()=>{
     const fin=(body||'').trim(),sum=S.summary.trim();
     let edited='';
     if(sum){let i=0;while(i<sum.length&&i<fin.length&&sum[i]===fin[i])i++;let j=0;while(j<sum.length-i&&j<fin.length-i&&sum[sum.length-1-j]===fin[fin.length-1-j])j++;edited=Math.max(sum.length-i-j,fin.length-i-j);}
-    return {rating:st.rating,taste:st.taste||'',seller:st.seller||'',
+    return {item:typeof PRODUCT!=='undefined'?PRODUCT:'',rating:st.rating,taste:st.taste||'',seller:st.seller||'',
       write_time_s:Math.round((now()-S.start)*10)/10,
       participant_chars:S.cond==='말로 쓰기'?userChars:fin.replace(/\s/g,'').length,
       answers:S.answers.length,answers_voice:S.src.voice,answers_typed:S.src.typed,answers_example:S.src.chip,
