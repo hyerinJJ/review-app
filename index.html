@@ -406,7 +406,7 @@ async function submitAnswer(text){
   if(wantsEnd&&unasked&&answers<9){next=localQuestion(unasked);}
   // 항목이 다 채워졌거나 AI가 끝내려 하면, 끝내기 전에 재구매 의사를 꼭 물어요
   else if(wantsEnd||answers>=9){
-    st.askedRebuy=true;next={question:'마지막으로, 다시 산다면 어떻게 하실 것 같아요? 이유도 들려주세요.',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
+    st.askedRebuy=true;next={question:'마지막으로, 이 상품 다시 살 생각 있으세요? 이유도 같이 말씀해 주세요.',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
   const q=next.question.trim();st.turns.push({role:'assistant',content:q});addMsg('ai',q);
   if(Array.isArray(next.chips)&&next.chips.length) quick(next.chips.slice(0,3).map(String));
   st.aiBusy=false;renderTopics();setStatus();
