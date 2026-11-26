@@ -113,13 +113,16 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .chat{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .msg{display:flex;gap:8px;max-width:100%}
 .msg .av{flex:none;width:28px;height:28px}
-.msg .bub{padding:10px 14px;font-size:14px;line-height:1.45;max-width:270px;overflow-wrap:anywhere}
+.msg .bub{white-space:pre-line;padding:10px 14px;font-size:14px;line-height:1.45;max-width:270px;overflow-wrap:anywhere}
 .msg.ai .bub{background:var(--seg);border-radius:4px 16px 16px 16px}
 .msg.me{justify-content:flex-end}
 .msg.me .bub{background:var(--blue-soft);border-radius:16px 4px 16px 16px}
 .msg.me .bub.live{opacity:.6}
 .quick{display:flex;flex-wrap:wrap;gap:6px;padding-left:36px}
 .quick button{padding:7px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:500;background:var(--card)}
+.choice{display:flex;flex-direction:column;gap:8px;padding-left:36px;max-width:300px}
+.choice button{padding:11px 14px;border-radius:8px;font-size:14px;font-weight:600;text-align:left;border:1px solid var(--blue);color:var(--blue);background:var(--card)}
+.choice button.pri{background:var(--blue);color:var(--on-blue)}
 .typing{display:inline-flex;gap:4px;padding:14px}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--ph);animation:b 1s infinite}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
@@ -251,8 +254,8 @@ const ITEMS={
     topics:[['taste','맛'],['usage','먹는 법'],['context','먹는 상황'],['cons','아쉬운 점']],
     kw:{taste:/맛|촉촉|퍽퍽|식감|부드|간이|짜|싱거|달|훈제|갈릭|페퍼|매콤|담백|질기/,usage:/보관|냉동|냉장|전자레인지|렌지|데우|조리|에어프라이|포장|개별|해동|꺼내|샐러드|볶음/,
       context:/사서|샀|구매|주문|다이어트|운동|헬스|아침|점심|저녁|간식|가족|아이|혼자|전에|예전|비교|보다|원래/,cons:/아쉽|아쉬|별로|단점|불편|짰|짜요|비싸|질기|질려|질리|퍽퍽|다만|근데|그런데|빼고|없어요|없었/},
-    first:{'맛있어요':'드셔보니 어떤 점이 맛있었어요?','별로예요':'드셔보니 맛은 어떤 점이 아쉬웠어요?','보통이에요':'처음 드셨을 때 맛이 어땠어요?','':'처음 드셨을 때 맛이 어땠어요?'},
-    q:{taste:'어떤 맛이나 식감이 기억에 남아요?',usage:'주로 뭐랑 같이, 어떻게 드세요?',context:'주로 어떤 때 드세요?',cons:'드시면서 아쉬웠던 점은 뭐였어요?'}
+    first:{'맛있어요':'보통 언제 먹어? 먹어보니까 어떤 맛이 제일 괜찮았어?','별로예요':'보통 언제 먹어? 먹어보니까 어떤 게 별로였어?','보통이에요':'보통 언제 먹어? 먹어보니까 어떤 점이 그냥 그랬어?','':'보통 언제 먹어? 먹어보니까 어땠어?'},
+    q:{taste:'맛은 어땠어? 퍽퍽하진 않았고, 간은 어때?',usage:'어떻게 먹어? 그냥 데워 먹어, 아님 샐러드 같은 거랑 같이 먹어?',context:'보통 언제 먹어? 운동하고 나서야, 아님 끼니 대신이야?',cons:'먹다가 별로였던 건 없었어? 질린다거나 짜다거나.'}
   },
   light:{
     name:'마타스튜디오 유튜브 방송 촬영 조명 W50',title:'마타스튜디오 유튜브 방송 촬영 조명',option:'마타스튜디오 유튜브 방송 촬영 조명, W50, 1개',img:'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADwAPADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7LqtqrFNNnYdQhqzVLXP+QTcf7n9aAOPNNXrTzSUAFFFFABRRRQAUoNJRQA6ikBpc0AFLmkzRQAvFFJS5oAKKM0tABmjNFFAC5opKKAFopKM0ALRRmjNABRRmigDrNF/5BcH+7/WrlU9F/wCQXB/u/wBauUAFUtc/5BNx/uf1FXapa5/yCbj/AHP6igDkDSUppKACiiigAooB9aKACiiigAooooAKUUlFAC5pabRQA6ikzS5oAM0uaSjNAC5opKKAHUU2igB1FNooAdRSZoB9qAOu0T/kF2/+7/WrlU9E/wCQVb/7v9auUAFUtc/5BNx/uf1FXapa7/yCbn/c/rQByBpKaX9qN/tQA6g9Kbv9qN1ACUoNJRQA7d6UtMpQcUAOopoanAg0AFFFFABRRRQAUUUUAFFFFAC0ZpKKAF/CjNJRQA4mjNNooAdkUU2lFAHX6H/yCrf/AHP61dqlof8AyCbf/c/qau0AFUde/wCQPc/7n9avVR17/kD3P+5/WgDizSUUUALS0gpaAAGlpKKAFopMmgGgBaBRRQAoNKT6U2igB+eM0UygdaAH0UhJ9aAaAFooyKMigAooooAKKKKACiiigApRSUooA6/Q/wDkE2/+5/U1dqlof/IJt/8Ac/qau0AFUde/5BFz/uf1q9VHXv8AkEXP+5/WgDiSaOaDRk0ALSg00UtAC5pabSigBaKSloAKM0UUAGeaXNJRQAtFJS5oAKKM0ZFAC5pKKKAFHvS7hTaKAF9cGgGkooAXJpd3FNooAdupQc0ylHWgDstD/wCQTb/7n9TV2qWg/wDIItv9z+pq7QAVR1//AJA9z/uf1q9VHX/+QPc/7n9aAOIPFFBpBQAtLmkooAdRSZozzQAtFFFAC5o70lFAC0tJRmgBaKTNFAC0UUlAC0UUUALmjNJRQApNGaSigBaKSigBaKTNFAHZ6D/yCLb/AHP6mr1UdA/5BFt/uf1NXqACqOvf8ge5/wByr1Utd/5BFz/1zNAHDUUnegGgBQaWkozQAtFGaKAClBpKKAHUU2loAWikzRmgBaKKKAFzRmkooAXNFJRQAtFJRmgBaWm5ozQA6ikzSUAOoFJmjNAHaaB/yCLb/c/qavVR0D/kD23+5/U1eoAKpa7/AMgi5/65mrtUdfONHuv+uZoA4Y9aSiigBc0tNpaAFooooAXNGaSigBaKSlzQAUUcUcUAFFFFAC5pelNooAXNLTaWgBc0U2loAWikozQAtFJmjNAC0CkBpQaAO18P/wDIHtv9z+pq9VHw/wD8ge2/3P6mr1ABVHX/APkD3P8AuVeqtqsbS6bcIvUxnFAHAUUUUAFFFFAC5ozSUUAOoptLmgBaKTNLQAUUUUAFLmkooAUGjNJRQAtFJRmgBaKTNFAC0UmaXNABRRmigApRSZoBoA7bw/8A8ga2/wBz+pq/VDw//wAga2/3P6mr9ABQeeKKKAOD1y2+xalJCQdrfPH7qf8ADpVE8Gu48QaTFq9l5LSNDMh3QzKOY2/qPUd68y1lvFOhzsl7oEl7AvS5s8srD1x1H0NAGuOlFcpF4501Tsura6tm9HSr0HizQpiMXqofR1IoA3aKoQaxpk/+qv7Zv+2gq4k0TjKSI30YGgB9FFFABRRRQAUuaSigBc0tNooAdRTaXNAC0UmaM0ALRSZozQAtFJmjNAC0UmaM0ALQKKBQB2/h7/kDW3+5/U1fqh4e/wCQNbf7n9TV+gAooooAKKKKAKmpaZp+pQGG/sre6jPVZYw3865HUPhX4QumLR2ctqx/54yED8jXc0UAeUXnwXsGybTV7iP2dAf61lXHwf1yE7rLW4Wx0B3Ka9sooA8Hk8B/ESy5t7jzQOmy4/xNVpbP4l2H+ssbmQD0jDj+VfQNFAHzu3iTxbZttu9Ifj+9CR/KnR+PrhDi50ph9CR/MV9CsqsMMAR6EZqpPpWmTj99p9rJn+9Cp/pQB4jD8QdNbiW1nT6EGr1v410KUfNNKh/2ozXpt14L8L3OfN0W1ye6qV/lWRdfC7whPkixkiJ/uSH+tAHLweJNEmxs1GEezHH86uxahYy/6u7gf6SCpLv4N6DJn7PfXkPpnDVlXXwWcHNprf03x4/lQBsq6MMqyn6GlrlZfhT4stsmz1SF/TEpWsW/0vxrpF29rJeuZE6gSbh/WgD0SivN11XxlbEb9sn+8gqVPF/iGH/X6fE+OvykfyoA9DorhIvHs6/8fGlMP91j/UVah8f6axxLa3Ef5GgDsaK5yHxroMhGZ5I8/wB6M1dh8SaHL9zUoPxbFAGtRVWHUbCbHlXkDZ9HFWBJG33XVvoc0AOoFHFGR60Adz4e/wCQLa/7n9TV+qHh7/kC2v8Auf1NX6ACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK818ZqI/ElyHH3trD8hXpVcp4/0Wa9iTULOMvNCMOg6svt7igDhpApnhOeMn+VWPKRhghSPcVSV9wGOGU9Dwc1dQ5UEd6AIpLG1f70ER/4CKqz6Hpso+a2T8K0gaCeKAOcu/C+llGYREEAntWe/hCykQMsjoSP89662YbkZfUEVBHgwoe+OeaAOXi8AzTxCW3vVAJOAxI6fhUb+CPEUHMFyW/3Zv8A64rv9GYfZNvdXYH860QaAPK10Px1BIEga+cnoFYt/LNNnPxBtBiWO+UDqWjP9RXtfhmEyamr44jBJrraAOc+GUl3L4E0mS+LG5aHMm7rnca6OjpRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAASAMk4FZN/4l8P2BIu9ZsYmHVTMpI/AVznjiz/4SC5+zRahPHBD8rJGSEZu+fWuRPw/EZzG0bfgKAO3l8X+B7u48oXNtdStn7tuWJ/HFc7qV7YT30j2MBigONq4x+lZ0Hha7s5lljiGV6ECrj2t4q/PaE/QUAM8yI9yPwo3IejCq8sU4JzA6/hUP70HkECgDQSEyH5WXr3NVr2E2amSRgI2yflycYGSeKLeQIec1ZuLhXtpIfLLB0KnjsaAM7TtUtobgkXEbwyYzhh8p9cV02n5viFs/3/unIH19K4l/D5kP7q3kx9Ks6f4d1e1lWW0uXs2671kIP6UAew6LYCxttpwZW5c/0q/WX4XuZJ9IiW4uluLmIbZnwASfUjtxWpQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABQehooPSgDl0IV2wBySTxT/NXun5VCQ4dgVbOT2pDu/ut19PegCSSWHByGHGf1xUMpgJxvI5I6HtUcu7B+Vvu+n+1UUgbf91vvP29qAGTxwFSfO7A9+hrOurSHJ/eDrjv1q1KH2NhG/wBUv8J9aikRy5+R/wDW+h9KAMx7eNTkMDk8U6OSNBnnAUt+GcVYaJ+Dsb1+6aryQybGAjb/AFZH3T60AXEnAz8hOCRyfSrAkc/KNq844GapBHy3yP8Aek/hPtVtEbcfkbqf4T6mgDe8GRKlzcuAdzqNxPU+ldN/Fiue8IKwluCVIGB1FdCwyODgjpQAtFIudoyMGloAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAopruifedV+pxSedD/AM9U/wC+hQA+iozPAOs0Y/4EKT7Tb/8APeL/AL7FAEtFRG5tx1uIv++xTTeWg63UH/fwUAT0VALy0PS5hP8A20FO+023/PxF/wB9igCWiovtNv8A894v++xR9ot/+e8X/fYoAlooBBGQcg0UAFFFFAH/2Q==',
@@ -261,10 +264,16 @@ const ITEMS={
     topics:[['taste','밝기·색감'],['usage','쓰는 법'],['context','쓰는 상황'],['cons','아쉬운 점']],
     kw:{taste:/밝|어둡|광량|단계|색|색온도|노란|하얀|주광|전구|따뜻|차가|빛|조명/,usage:/끼우|끼워|클립|콜드슈|거치|삼각대|폰|핸드폰|휴대폰|카메라|충전|배터리|버튼|조절|들고|손에|각도/,
       context:/사서|샀|구매|주문|촬영|찍|음식|소품|제품|유튜브|방송|브이로그|라이브|셀카|화상|전에|예전|비교|보다|원래/,cons:/아쉽|아쉬|별로|단점|불편|무겁|뜨거|발열|빨리|금방|부족|약해|흔들|빠져|다만|근데|그런데|빼고|없어요|없었/},
-    first:{'충분히 밝아요':'써보니 밝기는 어느 정도였어요?','어두워요':'어떤 상황에서 어둡다고 느끼셨어요?','적당해요':'처음 켜 보셨을 때 밝기가 어땠어요?','':'처음 켜 보셨을 때 밝기가 어땠어요?'},
-    q:{taste:'빛 색은 찍는 대상에 따라 어떻게 바꿔 쓰세요?',usage:'폰이나 카메라에 어떻게 달아서 쓰세요?',context:'주로 뭘, 어디서 찍을 때 켜세요?',cons:'쓰시면서 아쉬웠던 점은 뭐였어요?'}
+    first:{'충분히 밝아요':'주로 뭐 찍을 때 켜? 켜보니까 어느 정도로 밝았어?','어두워요':'주로 뭐 찍을 때 켜? 어떤 때 어둡다고 느꼈어?','적당해요':'주로 뭐 찍을 때 켜? 켜보니까 밝기는 어느 정도였어?','':'주로 뭐 찍을 때 켜? 켜보니까 밝기는 어땠어?'},
+    q:{taste:'빛 색은 어때? 찍는 거에 따라 바꿔 써?',usage:'폰이나 카메라에 어떻게 달아서 써? 고정은 잘 돼?',context:'주로 뭐 찍을 때, 어디서 켜?',cons:'쓰다가 불편했던 건 없었어? 무겁다거나 뜨겁다거나.'}
   }
 };
+/* 친구 대화 가이드: /api/ai 로 같이 보내는 질문 기준 (서버 프롬프트에서 사용) */
+const FRIEND_PERSONA='같은 상품을 먼저 써 본 친구처럼 반말로, 한두 문장으로 짧게 묻는다. 한 번에 질문 하나만. 인사·칭찬·정리 멘트 없이 바로 묻는다. 직전 답에서 나온 말을 이어받아 구체적인 경험(써본 상황, 써본 결과, 비교, 아쉬운 점)을 끌어낸다.';
+ITEMS.chicken.guide='먹는 상황(언제, 뭐랑) → 먹어본 맛·식감 → 먹는 방법과 상황 → 다른 제품과 비교 → 아쉬운 점 → 재구매. 예: "보통 언제 먹어? 먹을 만했어?"';
+ITEMS.light.guide='쓰는 상황(뭘 찍을 때) → 켜본 밝기·색감 → 폰/카메라에 다는 방법 → 쓰는 장소와 상황 → 불편한 점(무게·발열·배터리) → 재구매. 예: "주로 뭐 찍을 때 켜? 밝기는 쓸 만해?"';
+ITEMS.chicken.story='이번에 시킨 닭가슴살, 먹어본 경험이 어땠는지 쭉 말로 서술해줄래?';
+ITEMS.light.story='이번에 산 조명, 써본 경험이 어땠는지 쭉 말로 서술해줄래?';
 const ITEM_KEY=(new URLSearchParams(location.search).get('item')||'chicken');
 const ITEM=ITEMS[ITEM_KEY]||ITEMS.chicken;
 const PRODUCT=ITEM.name;
@@ -319,7 +328,7 @@ $('redo').onclick=e=>startChat(e,true);
 let buf='',partial='',silence=null,liveEl=null;
 // 서버 함수(/api/ai)가 Claude API를 대신 불러요. 실패하면 미리 정해 둔 질문으로 이어가요.
 async function api(task){const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({task,item:ITEM_KEY,rating:st.rating,taste:st.taste,turns:st.turns,tone:st.tone||'basic'})});if(!r.ok)throw new Error('api '+r.status);return r.json();}
+  body:JSON.stringify({task,item:ITEM_KEY,rating:st.rating,taste:st.taste,turns:st.turns,tone:st.tone||'basic',persona:FRIEND_PERSONA,guide:ITEM.guide})});if(!r.ok)throw new Error('api '+r.status);return r.json();}
 // 브라우저 내장 음성 인식(Chrome·Edge·Safari). 지원하지 않으면 null → 키보드 입력.
 function makeSpeech(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
   let rec=null,on=false,wantOn=false,endReason='';const h={p:[],f:[],s:[]};const emit=(k,e)=>h[k].forEach(fn=>fn(e));
@@ -353,19 +362,22 @@ function addMsg(role,text){if(role==='ai'&&text)window.RLOG&&RLOG.ev('question',
 function scrollChat(){const c=$('chat');c.scrollTop=c.scrollHeight;}
 function quick(chips){return; /* 답변 예시는 보여주지 않음 */const q=document.createElement('div');q.className='quick';for(const c of chips){const b=document.createElement('button');b.textContent=c;b.onclick=()=>{q.remove();window.ansSrc='chip';submitAnswer(c);};q.append(b);}$('chat').append(q);scrollChat();}
 function renderTopics(){$('chips-chat').innerHTML=chipsHTML(st.covered);const all=Object.values(st.covered).every(Boolean);const any=st.turns.some(t=>t.role==='user');
-  $('finish').disabled=!any||st.aiBusy;$('finish').textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 마치기';}
-function firstQuestion(){return[ITEM.first[st.taste||'']||ITEM.first[''],[]];}
+  $('finish').disabled=!any||st.aiBusy;$('finish').textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 중단하고 지금까지 내용 요약하기';}
+function firstQuestion(){return[ITEM.story||'경험이 어땠는지 쭉 말로 서술해줄래?',[]];}
 function startChat(e,again){
   // 마이크는 클릭 안에서 바로 켜야 해서 다른 작업보다 먼저 호출
   if(dict&&!dict.active()) dict.start({language:'ko'}).catch(err=>{if(err.code==='unavailable'||err.code==='not_granted'){micMsg='음성 입력을 쓸 수 없어요. 키보드로 답해주세요.';openKeyboard();setStatus();}});
   show('s-chat');
   if(!again&&st.turns.length) {renderTopics();setStatus();return;}
-  $('chat').innerHTML='';st.turns=[];st.covered=NO_TOPICS();st.askedRebuy=false;st.rebuyAnswered=false;st.rebuyFollowed=false;st.askedTopics=new Set(['taste']);buf='';partial='';liveEl=null;
+  $('chat').innerHTML='';st.turns=[];st.covered=NO_TOPICS();st.askedRebuy=false;st.rebuyAnswered=false;st.rebuyFollowed=false;st.askedTopics=new Set(['taste']);st.phase='story';st.firstContinue=false;buf='';partial='';liveEl=null;
   const [q,chips]=firstQuestion();st.turns.push({role:'assistant',content:q});addMsg('ai',q);quick(chips);renderTopics();setStatus();
   if(!dict) openKeyboard();}
 $('start-voice').onclick=e=>startChat(e,false);
 $('back-write').onclick=()=>{if(dict?.active())dict.stop();show('s-write');};
-$('to-direct').onclick=()=>{if(dict?.active())dict.stop();setMode('direct');show('s-write');};
+$('to-direct').onclick=()=>{if(dict?.active())dict.stop();setMode('direct');
+  const said=st.turns.filter(t=>t.role==='user').map(t=>t.content.replace(/[.!?]?$/,'.')).join(' ');
+  if(said&&!$('r-body').value.trim()){$('r-body').value=said;renderDirectChips();toast('지금까지 말한 내용을 가져왔어요. 이어서 글로 써보세요');}
+  show('s-write');updateSubmit();};
 $('mic').onclick=()=>{if(!dict){openKeyboard();return;}
   if(dict.active()){dict.stop();}else{micMsg='';dict.start({language:'ko'}).catch(err=>{if(err.code!=='stopped'){micMsg=err.code==='not_granted'?'마이크가 꺼져 있어요. 키보드로 답해주세요.':'음성 입력이 안 돼요. 키보드로 답해주세요.';setStatus();openKeyboard();}});}};
 function openKeyboard(){$('type-row').hidden=false;}
@@ -385,11 +397,34 @@ async function submitAnswer(text){
   if(st.askedRebuy){
     // 재구매 답에 이유가 없으면 한 번만 이유를 더 물어요
     if(!st.rebuyAnswered&&!st.rebuyFollowed&&!(text.length>=14||/서|때문|니까|해서|면/.test(text))){st.rebuyFollowed=true;
-      const why='어떤 점 때문에 그렇게 생각하세요?';st.turns.push({role:'assistant',content:why});addMsg('ai',why);
+      const why='왜 그렇게 생각해?';st.turns.push({role:'assistant',content:why});addMsg('ai',why);
       quick(['맛이 계속 생각나서요','양에 비해 가격이 괜찮아서요','오래 먹으니 질려서요']);renderTopics();setStatus();return;}
     const first=!st.rebuyAnswered;st.rebuyAnswered=true;
-    const reply=first?'충분히 모였어요! 더 하고 싶은 말이 있다면 해주시고, 없다면 대화를 마쳐주세요.':'네, 그 내용도 담을게요. 더 있으면 말씀해 주시고, 없다면 대화를 마쳐주세요.';
+    const reply=first?'좋아, 충분히 모였어! 더 하고 싶은 말 있으면 해주고, 없으면 아래 버튼 눌러서 리뷰로 정리하자.':'응, 그것도 담을게. 더 있으면 말해주고, 없으면 아래 버튼 눌러줘.';
     st.turns.push({role:'assistant',content:reply});addMsg('ai',reply);renderTopics();setStatus();return;}
+  if(st.phase==='story'){return storySummary(text);}
+  if(st.phase==='choose'){document.querySelectorAll('.choice').forEach(q=>q.remove());st.phase='chat';st.firstContinue=true;}
+  return advance(text);
+}
+// 첫 서술이 끝나면 먼저 요약해 주고, 바로 작성할지 대화로 더 이어갈지 고르게 해요.
+async function storySummary(text){
+  st.aiBusy=true;renderTopics();setStatus();
+  const typing=document.createElement('div');typing.className='msg ai';typing.innerHTML=AV+'<div class="bub typing"><i></i><i></i><i></i></div>';$('chat').append(typing);scrollChat();
+  let r=null;try{r=await api('summary');}catch(e){r=null;}
+  typing.remove();
+  const said=st.turns.filter(t=>t.role==='user').map(t=>t.content).join(' ');
+  const body=(r&&typeof r.body==='string'&&r.body.trim())?r.body.trim():said;
+  const detected=detect(said);for(const k in detected) if(detected[k]) st.covered[k]=true;
+  const msg='이렇게 정리해 봤어.\n\n'+body+'\n\n이대로 리뷰로 쓸까, 아니면 더 얘기해볼래?';
+  st.turns.push({role:'assistant',content:msg});addMsg('ai',msg);
+  st.phase='choose';st.aiBusy=false;renderTopics();setStatus();
+  const c=document.createElement('div');c.className='choice';
+  const mk=(label,pri,fn)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';b.onclick=()=>{c.remove();fn();};return b;};
+  c.append(mk('대화로 더 이어가며 리뷰 쓰기',true,()=>{window.RLOG&&RLOG.ev('choice',{v:'continue'});addMsg('me','대화로 더 이어갈래');st.phase='chat';st.firstContinue=true;advance(said);}),
+           mk('이 내용을 바로 요약해서 작성하기',false,()=>{window.RLOG&&RLOG.ev('choice',{v:'write_now'});addMsg('me','이대로 바로 작성할래');$('finish').onclick();}));
+  $('chat').append(c);scrollChat();
+}
+async function advance(text){
   st.aiBusy=true;renderTopics();setStatus();
   const typing=document.createElement('div');typing.className='msg ai';typing.innerHTML=AV+'<div class="bub typing"><i></i><i></i><i></i></div>';$('chat').append(typing);scrollChat();
   let next=null;
@@ -406,7 +441,7 @@ async function submitAnswer(text){
   if(wantsEnd&&unasked&&answers<9){next=localQuestion(unasked);}
   // 항목이 다 채워졌거나 AI가 끝내려 하면, 끝내기 전에 재구매 의사를 꼭 물어요
   else if(wantsEnd||answers>=9){
-    st.askedRebuy=true;next={question:'마지막으로, 이 상품 다시 살 생각 있으세요? 이유도 같이 말씀해 주세요.',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
+    st.askedRebuy=true;next={question:'마지막으로, 이거 다시 살 것 같아? 왜 그런지도 말해줘.',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
   const q=next.question.trim();st.turns.push({role:'assistant',content:q});addMsg('ai',q);
   if(Array.isArray(next.chips)&&next.chips.length) quick(next.chips.slice(0,3).map(String));
   st.aiBusy=false;renderTopics();setStatus();
@@ -415,7 +450,8 @@ async function submitAnswer(text){
 // AI가 응답하지 못할 때 쓰는 정해 둔 질문. 물어본 항목은 답을 받으면 채운 것으로 봐요(같은 질문 반복 방지).
 const TOPIC_Q={taste:[ITEM.q.taste,[]],usage:[ITEM.q.usage,[]],context:[ITEM.q.context,[]],cons:[ITEM.q.cons,[]]};
 function localQuestion(k){st.pendingTopic=k;st.askedTopics.add(k);const [question,chips]=TOPIC_Q[k];return{question,chips,topic:k};}
-function localNext(){st.pendingTopic=null;const k=TOPICS.map(t=>t[0]).find(k=>!st.covered[k]);
+function localNext(){st.pendingTopic=null;
+  if(st.firstContinue){st.firstContinue=false;if(!st.covered.context){st.pendingTopic='context';st.askedTopics.add('context');return{question:ITEM.first[st.taste||'']||ITEM.first[''],chips:[],topic:'context'};}}const k=TOPICS.map(t=>t[0]).find(k=>!st.covered[k]);
   return k?localQuestion(k):{question:'충분히 모였어요! 더 하고 싶은 말이 있다면 해주시고, 없다면 대화를 마쳐주세요.',chips:[]};}
 
 $('finish').onclick=async()=>{
@@ -428,7 +464,7 @@ $('finish').onclick=async()=>{
   $('ai-line').hidden=false;$('tone').hidden=false;setMode('direct');renderDirectChips();
   for(const k in st.covered) if(st.covered[k]) $('chips-direct').children[TOPICS.findIndex(t=>t[0]===k)].classList.add('done');
   show('s-write');updateSubmit();toast('대화 내용으로 리뷰를 완성했어요');window.RLOG&&RLOG.summary($('r-title').value,$('r-body').value,!!(r&&r.title!==undefined&&r.body&&st.turns.length));
-  btn.textContent='대화 마치기';};
+  btn.textContent=st.rebuyAnswered?'대화 마치고 리뷰 완성하기':'대화 중단하고 지금까지 내용 요약하기';};
 // 말투 바꾸기: 같은 대화로 리뷰를 다시 정리해요
 for(const b of $('tone').querySelectorAll('button')) b.onclick=async()=>{
   if(b.getAttribute('aria-pressed')==='true')return;
