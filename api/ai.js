@@ -5,33 +5,68 @@ import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic(); // ANTHROPIC_API_KEY 를 자동으로 읽어요
 const QUESTION_MODEL = "claude-sonnet-5-5"; // 질문: 생각 단계 없이 바로 답해서 빠르고, Haiku보다 맥락을 잘 이해해요
 const SUMMARY_MODEL = "claude-sonnet-5-5"; // 리뷰 정리: 문장 품질 우선 (리뷰 1건에 한 번만 불러요)
-const PRODUCT = "득근파티 통 닭가슴살 6종 혼합(100g, 54개)";
 const MAX_ANSWERS = 9; // 꼬리질문이 늘어난 만큼 여유 있게
 const REBUY_DONE = "충분히 모였어요! 대화를 마쳐주세요.";
 
-// 누구에게나 똑같은 상품 정보. 이건 묻지 않아요 (당연한 걸 묻지 않게).
-const PRODUCT_FACTS = [
-  "냉동 닭가슴살이라 냉동실에 보관한다",
-  "한 팩씩 개별 포장되어 있다",
-  "전자레인지로 데워 먹는 게 기본이다",
-  "여러 맛이 섞여 있고, 한 팩은 100g, 총 54팩이다",
-];
-
-// 이 상품을 살까 고민하는 사람이 궁금해하는 점. 고객 본인의 경험으로만 답할 수 있는 것.
-const BUYER_QUESTIONS = [
-  "계속 먹어도 질리지 않는지, 질렸다면 얼마나 먹고 나서인지",
-  "식감이 퍽퍽한지 촉촉한지",
-  "간이 짠지 싱거운지",
-  "한 팩(100g) 양이 한 끼로 충분한지",
-  "본인만의 맛있게 먹는 방법 (같이 먹는 음식, 요리법)",
-];
-
-// 리뷰에 담을 네 가지. 페이지의 '담긴 내용' 칩과 같은 순서예요.
-const TOPICS = {
-  taste: "맛·식감 (어떤 맛이, 어떤 식감이)",
-  usage: "본인만의 먹는 방법 (언제, 무엇과 같이, 어떻게 요리해서, 한 번에 얼마나)",
-  context: "구매 이유나 먹는 상황 (왜 샀는지, 누가 언제 먹는지, 전에 먹던 것과 비교)",
-  cons: "아쉬운 점 (구체적인 순간이나 이유)",
+// 품목별 설정. 페이지가 보낸 item 값으로 고르고, 없으면 닭가슴살.
+const ITEMS = {
+  chicken: {
+    product: "득근파티 통 닭가슴살 6종 혼합(100g, 54개)",
+    rateLabel: "맛 평가",
+    rateOpts: ["맛있어요", "보통이에요", "별로예요"],
+    // 누구에게나 똑같은 상품 정보. 이건 묻지 않아요 (당연한 걸 묻지 않게).
+    facts: [
+      "냉동 닭가슴살이라 냉동실에 보관한다",
+      "한 팩씩 개별 포장되어 있다",
+      "전자레인지로 데워 먹는 게 기본이다",
+      "여러 맛이 섞여 있고, 한 팩은 100g, 총 54팩이다",
+    ],
+    // 이 상품을 살까 고민하는 사람이 궁금해하는 점. 고객 본인의 경험으로만 답할 수 있는 것.
+    buyer: [
+      "계속 먹어도 질리지 않는지, 질렸다면 얼마나 먹고 나서인지",
+      "식감이 퍽퍽한지 촉촉한지",
+      "간이 짠지 싱거운지",
+      "한 팩(100g) 양이 한 끼로 충분한지",
+      "본인만의 맛있게 먹는 방법 (같이 먹는 음식, 요리법)",
+    ],
+    topics: {
+      taste: "맛·식감 (어떤 맛이, 어떤 식감이)",
+      usage: "본인만의 먹는 방법 (언제, 무엇과 같이, 어떻게 요리해서, 한 번에 얼마나)",
+      context: "구매 이유나 먹는 상황 (왜 샀는지, 누가 언제 먹는지, 전에 먹던 것과 비교)",
+      cons: "아쉬운 점 (구체적인 순간이나 이유)",
+    },
+    extra: "맛을 종류별로 다 먹어봤다고 가정하지 않는다. 맛 종류는 고객이 먼저 말한 경우에만 묻는다.",
+    bad: '"보관은 어떻게 하세요?", "몇 분 데워 드세요?"',
+    good: '"주로 뭐랑 같이 드세요?", "처음 드셨을 때 어떤 점이 예상과 달랐어요?", "한 팩 드시면 배가 어느 정도 차요?"',
+  },
+  light: {
+    product: "마타스튜디오 유튜브 방송 촬영 조명 W50",
+    rateLabel: "밝기 평가",
+    rateOpts: ["충분히 밝아요", "적당해요", "어두워요"],
+    facts: [
+      "휴대용 LED 촬영 조명이다",
+      "최대 밝기 1050루멘, 밝기는 여러 단계로 조절된다",
+      "색온도(빛 색)를 3가지로 바꿀 수 있다",
+      "무게는 120g, 배터리는 2000mAh로 충전해서 쓴다",
+      "콜드슈나 클립으로 폰이나 카메라에 달 수 있다",
+    ],
+    buyer: [
+      "실제로 찍을 때 밝기가 충분한지, 몇 단계로 주로 쓰는지",
+      "빛 색(색온도)을 어떤 촬영에 어떻게 바꿔 쓰는지",
+      "폰이나 카메라에 달았을 때 무게나 흔들림이 어떤지",
+      "한 번 충전하면 얼마나 쓰는지, 열이 나는지",
+      "주로 무엇을 어디서 찍는지 (음식, 소품, 얼굴, 실내 등)",
+    ],
+    topics: {
+      taste: "밝기·빛 색감 (얼마나 밝은지, 어떤 빛 색이 어땠는지)",
+      usage: "본인이 쓰는 방법 (어디에 달아서, 무엇을 찍을 때, 몇 단계로, 어떻게 조절해서)",
+      context: "구매 이유나 쓰는 상황 (왜 샀는지, 어떤 촬영에 쓰는지, 전에 쓰던 조명이나 촬영 방식과 비교)",
+      cons: "아쉬운 점 (구체적인 순간이나 이유)",
+    },
+    extra: "스펙 숫자(루멘, mAh)를 묻지 않는다. 고객이 직접 겪은 밝기, 배터리 지속 시간, 무게감을 묻는다.",
+    bad: '"색온도는 몇 가지예요?", "충전은 어떻게 하세요?"',
+    good: '"주로 뭘 찍을 때 켜세요?", "폰에 달면 무게는 어떻게 느껴져요?", "한 번 충전하면 얼마나 쓰세요?"',
+  },
 };
 
 const bool = { type: "boolean" };
@@ -65,42 +100,44 @@ const SUMMARY_SCHEMA = {
 // 브라우저가 보낸 값은 믿지 않고 모양과 길이를 제한해요 (아무 질문이나 대신 보내는 통로가 되지 않게)
 function clean(body) {
   const rating = Math.min(5, Math.max(1, Number(body?.rating) || 0)) || 0;
-  const taste = ["맛있어요", "보통이에요", "별로예요"].includes(body?.taste) ? body.taste : "선택 안 함";
+  const item = ITEMS[body?.item] ? body.item : "chicken";
+  const taste = ITEMS[item].rateOpts.includes(body?.taste) ? body.taste : "선택 안 함";
   const turns = (Array.isArray(body?.turns) ? body.turns : [])
     .slice(-20)
     .filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string")
     .map((t) => ({ role: t.role, content: t.content.slice(0, 400) }));
   const tone = ["basic", "casual", "formal"].includes(body?.tone) ? body.tone : "basic";
-  return { rating, taste, turns, tone };
+  return { item, rating, taste, turns, tone };
 }
 
 const convo = (turns) => turns.map((t) => (t.role === "user" ? "고객: " : "AI: ") + t.content).join("\n");
-const topicList = () => Object.entries(TOPICS).map(([k, v]) => `- ${k}: ${v}`).join("\n");
+const topicList = (C) => Object.entries(C.topics).map(([k, v]) => `- ${k}: ${v}`).join("\n");
 
-function nextPrompt({ rating, taste, turns }) {
+function nextPrompt({ item, rating, taste, turns }) {
+  const C = ITEMS[item];
   const answers = turns.filter((t) => t.role === "user").length;
   return `너는 온라인 쇼핑몰에서 고객이 리뷰를 쉽게 쓰도록 대화로 질문하는 AI야.
 좋은 리뷰는 읽는 사람이 "나도 이 상황이면 사도 되겠다"를 판단할 수 있게 해 준다. 그래서 고객의 실제 경험을 구체적으로 끌어낸다.
 
-상품(참고용, 말하지 말 것): ${PRODUCT}
-고객이 고른 별점: ${rating}/5, 맛 평가: ${taste}
+상품(참고용, 말하지 말 것): ${C.product}
+고객이 고른 별점: ${rating}/5, ${C.rateLabel}: ${taste}${item !== "chicken" ? "\n(아래 규칙의 예시 문장은 닭가슴살 기준이다. 형식만 참고하고, 내용은 이 상품에 맞게 바꿔 생각한다.)" : ""}
 지금까지 고객 답변 수: ${answers} (최대 ${MAX_ANSWERS})
 
 모을 항목:
-${topicList()}
+${topicList(C)}
 
 채움 기준: 그 항목에 "무엇이 어땠는지"와 "왜/어떤 상황에서" 중 두 가지가 다 있어야 true. "맛있어요", "좋아요", "편해요", "네", "아니요"처럼 이유나 상황이 없는 답만 있으면 false로 두고 꼬리질문을 한다.
 별점이 5점 미만이면 cons는 꼭 묻는다. 고객이 아쉬운 점이 "없다"고 분명히 답하면 cons는 true.
 
 누구나 아는 상품 정보 (절대 묻지 않는다):
-${PRODUCT_FACTS.map((f) => "- " + f).join("\n")}
-보관 방법, 전자레인지로 데우는지처럼 모든 구매자가 똑같이 하는 것은 묻지 않는다. 이 고객만 말해줄 수 있는 경험(어떤 상황에서, 무엇과 같이, 어떤 느낌이었는지, 무엇과 비교했는지, 예상과 달랐던 점)을 묻는다.
-  나쁜 예: "보관은 어떻게 하세요?", "몇 분 데워 드세요?"
-  좋은 예: "주로 뭐랑 같이 드세요?", "처음 드셨을 때 어떤 점이 예상과 달랐어요?", "한 팩 드시면 배가 어느 정도 차요?"
+${C.facts.map((f) => "- " + f).join("\n")}
+모든 구매자가 똑같이 하는 것은 묻지 않는다. 이 고객만 말해줄 수 있는 경험(어떤 상황에서, 무엇과 같이, 어떤 느낌이었는지, 무엇과 비교했는지, 예상과 달랐던 점)을 묻는다.
+  나쁜 예: ${C.bad}
+  좋은 예: ${C.good}
 
 구매자들이 자주 궁금해하는 점 (고객이 실제로 겪었을 법한 것부터, 한 대화에서 1~2개만 자연스럽게 섞어 묻는다):
-${BUYER_QUESTIONS.map((q) => "- " + q).join("\n")}
-맛을 종류별로 다 먹어봤다고 가정하지 않는다. 맛 종류는 고객이 먼저 말한 경우에만 묻는다.
+${C.buyer.map((q) => "- " + q).join("\n")}
+${C.extra}
 
 다음 질문 고르기 (위에서부터 먼저 해당하는 것 하나). 꼬리질문을 우선한다:
 1. 꼬리질문 - 방금 답이 짧거나(15자 안팎) 이유·상황이 없으면, 그 답을 이어받아 "왜", "어떤 점에서", "어떤 상황에서"를 묻는다.
@@ -145,8 +182,10 @@ const TONES = {
   formal: '정중한 습니다체로 통일한다. (예: "식사 대용으로 먹고 있는데 한 팩으로는 조금 부족합니다.")',
 };
 
-function summaryPrompt({ rating, taste, turns, tone }) {
+function summaryPrompt({ item, rating, taste, turns, tone }) {
+  const C = ITEMS[item];
   return `아래는 고객과 AI의 대화야. 고객이 한 말로, 다른 구매자가 훑어만 봐도 파악되는 리뷰를 만들어줘.
+상품(참고용, 쓰지 말 것): ${C.product}${item !== "chicken" ? "\n(아래 규칙의 예시 문장은 닭가슴살 기준이다. 형식만 참고하고, 내용은 이 상품에 맞게 바꿔 생각한다.)" : ""}
 
 반드시 지킬 것:
 1. 고객이 실제로 말한 사실만 쓴다. 말하지 않은 사실, 평가, 꾸미는 말("강력 추천", "가성비 최고", "만족스러워요" 등)을 새로 넣지 않는다.
@@ -174,7 +213,7 @@ function summaryPrompt({ rating, taste, turns, tone }) {
   - 순서는 고정하지 않는다. 읽는 사람이 이해하기 쉬운 흐름으로 정한다. 보통은 왜·어떻게 먹는지(상황) → 좋았던 점 → 아쉬운 점 → 재구매 의사로 가되, 좋았던 점과 아쉬운 점이 같은 주제면(예: 맛은 좋은데 오래 먹으면 질림) 한 문장으로 묶는다.
 - 고객이 재구매 의사를 말했으면 body의 마지막 줄은 그 결론(다시 살지와 이유)으로 끝낸다. 말하지 않았으면 결론을 지어내지 않는다.
 
-참고(문장에 쓰지 말 것): 고객 별점 ${rating}/5, 맛 평가 ${taste}
+참고(문장에 쓰지 말 것): 고객 별점 ${rating}/5, ${C.rateLabel} ${taste}
 
 대화:
 ${convo(turns)}`;
