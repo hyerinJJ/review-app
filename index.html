@@ -283,9 +283,9 @@ const FRIEND_PERSONA='같은 상품을 먼저 써 본 친구처럼 반말로, �
 ITEMS.chicken.guide='먹는 상황(언제, 뭐랑) → 먹어본 맛·식감 → 먹는 방법과 상황 → 다른 제품과 비교 → 아쉬운 점 → 재구매. 예: "보통 언제 먹어? 먹을 만했어?"';
 ITEMS.light.guide='쓰는 상황(뭘 찍을 때) → 켜본 밝기·색감 → 폰/카메라에 다는 방법 → 쓰는 장소와 상황 → 불편한 점(무게·발열·배터리) → 재구매. 예: "주로 뭐 찍을 때 켜? 밝기는 쓸 만해?"';
 ITEMS.pouch.guide='쓰는 상황(어디 들고 다닐 때) → 넣어본 핏·보호 → 쓰는 방법(충전기 파우치, 마우스패드, 넣고 빼기) → 전에 쓰던 것과 비교 → 아쉬운 점(오염, 냄새, 두께) → 재구매. 예: "보통 어디 들고 다닐 때 써? 노트북은 딱 맞아?"';
-ITEMS.pouch.story='이번에 산 노트북 파우치, 써본 경험이 어땠는지 쭉 말로 서술해줄래?';
-ITEMS.chicken.story='이번에 시킨 닭가슴살, 먹어본 경험이 어땠는지 쭉 말로 서술해줄래?';
-ITEMS.light.story='이번에 산 조명, 써본 경험이 어땠는지 쭉 말로 서술해줄래?';
+ITEMS.pouch.story='이번에 산 노트북 파우치 어땠어? 써본 얘기 편하게 쭉 말해줘!';
+ITEMS.chicken.story='이번에 시킨 닭가슴살 어땠어? 먹어본 얘기 편하게 쭉 말해줘!';
+ITEMS.light.story='이번에 산 조명 어땠어? 써본 얘기 편하게 쭉 말해줘!';
 const ITEM_KEY=(new URLSearchParams(location.search).get('item')||'chicken');
 const ITEM=ITEMS[ITEM_KEY]||ITEMS.chicken;
 const PRODUCT=ITEM.name;
@@ -409,10 +409,10 @@ async function submitAnswer(text){
   if(st.askedRebuy){
     // 재구매 답에 이유가 없으면 한 번만 이유를 더 물어요
     if(!st.rebuyAnswered&&!st.rebuyFollowed&&!(text.length>=14||/서|때문|니까|해서|면/.test(text))){st.rebuyFollowed=true;
-      const why='왜 그렇게 생각해?';st.turns.push({role:'assistant',content:why});addMsg('ai',why);
+      const why='오 왜? 어떤 점 때문에?';st.turns.push({role:'assistant',content:why});addMsg('ai',why);
       quick(['맛이 계속 생각나서요','양에 비해 가격이 괜찮아서요','오래 먹으니 질려서요']);renderTopics();setStatus();return;}
     const first=!st.rebuyAnswered;st.rebuyAnswered=true;
-    const reply=first?'좋아, 충분히 모였어! 더 하고 싶은 말 있으면 해주고, 없으면 아래 버튼 눌러서 리뷰로 정리하자.':'응, 그것도 담을게. 더 있으면 말해주고, 없으면 아래 버튼 눌러줘.';
+    const reply=first?'고마워! 얘기 들으니까 리뷰 쓸 거 충분해. 더 생각나는 거 있으면 말해주고, 없으면 아래 버튼 눌러서 리뷰로 정리하자!':'오케이, 그것도 넣을게! 더 있으면 말해주고, 없으면 아래 버튼 눌러줘.';
     st.turns.push({role:'assistant',content:reply});addMsg('ai',reply);renderTopics();setStatus();return;}
   if(st.phase==='story'){return storySummary(text);}
   if(st.phase==='choose'){document.querySelectorAll('.choice').forEach(q=>q.remove());st.phase='chat';st.firstContinue=true;}
@@ -427,12 +427,12 @@ async function storySummary(text){
   const said=st.turns.filter(t=>t.role==='user').map(t=>t.content).join(' ');
   const body=(r&&typeof r.body==='string'&&r.body.trim())?r.body.trim():said;
   const detected=detect(said);for(const k in detected) if(detected[k]) st.covered[k]=true;
-  const msg='이렇게 정리해 봤어.\n\n'+body+'\n\n이대로 리뷰로 쓸까, 아니면 더 얘기해볼래?';
+  const msg='오 좋다! 들은 거 이렇게 정리해봤어.\n\n'+body+'\n\n이대로 리뷰로 쓸까, 아니면 나랑 조금 더 수다 떨어볼래?';
   st.turns.push({role:'assistant',content:msg});addMsg('ai',msg);
   st.phase='choose';st.aiBusy=false;renderTopics();setStatus();
   const c=document.createElement('div');c.className='choice';
   const mk=(label,pri,fn)=>{const b=document.createElement('button');b.textContent=label;if(pri)b.className='pri';b.onclick=()=>{c.remove();fn();};return b;};
-  c.append(mk('대화로 더 이어가며 리뷰 쓰기',true,()=>{window.RLOG&&RLOG.ev('choice',{v:'continue'});addMsg('me','대화로 더 이어갈래');st.phase='chat';st.firstContinue=true;advance(said);}),
+  c.append(mk('조금 더 얘기하면서 리뷰 쓰기',true,()=>{window.RLOG&&RLOG.ev('choice',{v:'continue'});addMsg('me','조금 더 얘기할래');st.phase='chat';st.firstContinue=true;advance(said);}),
            mk('이 내용을 바로 요약해서 작성하기',false,()=>{window.RLOG&&RLOG.ev('choice',{v:'write_now'});addMsg('me','이대로 바로 작성할래');$('finish').onclick();}));
   $('chat').append(c);scrollChat();
 }
@@ -453,15 +453,16 @@ async function advance(text){
   if(wantsEnd&&unasked&&answers<9){next=localQuestion(unasked);}
   // 항목이 다 채워졌거나 AI가 끝내려 하면, 끝내기 전에 재구매 의사를 꼭 물어요
   else if(wantsEnd||answers>=9){
-    st.askedRebuy=true;next={question:'마지막으로, 이거 다시 살 것 같아? 왜 그런지도 말해줘.',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
+    st.askedRebuy=true;next={question:'마지막 질문! 이거 다시 살 것 같아? 왜 그런지도 궁금해 ㅎㅎ',chips:['맛있어서 또 살 거예요','질려서 다른 걸로 바꿀래요','할인할 때 또 살게요']};}
   const q=next.question.trim();st.turns.push({role:'assistant',content:q});addMsg('ai',q);
   if(Array.isArray(next.chips)&&next.chips.length) quick(next.chips.slice(0,3).map(String));
   st.aiBusy=false;renderTopics();setStatus();
   if(buf||partial){renderLive();armSilence();}
 }
 // AI가 응답하지 못할 때 쓰는 정해 둔 질문. 물어본 항목은 답을 받으면 채운 것으로 봐요(같은 질문 반복 방지).
+const REACT=['오 그렇구나! ','ㅋㅋ 오케이! ','아하 그렇구나. ','오 좋다! '];let _ri=0;const rx=q=>REACT[(_ri++)%REACT.length]+q;
 const TOPIC_Q={taste:[ITEM.q.taste,[]],usage:[ITEM.q.usage,[]],context:[ITEM.q.context,[]],cons:[ITEM.q.cons,[]]};
-function localQuestion(k){st.pendingTopic=k;st.askedTopics.add(k);const [question,chips]=TOPIC_Q[k];return{question,chips,topic:k};}
+function localQuestion(k){st.pendingTopic=k;st.askedTopics.add(k);const [question,chips]=TOPIC_Q[k];return{question:rx(question),chips,topic:k};}
 function localNext(){st.pendingTopic=null;
   if(st.firstContinue){st.firstContinue=false;if(!st.covered.context){st.pendingTopic='context';st.askedTopics.add('context');return{question:ITEM.first[st.taste||'']||ITEM.first[''],chips:[],topic:'context'};}}const k=TOPICS.map(t=>t[0]).find(k=>!st.covered[k]);
   return k?localQuestion(k):{question:'충분히 모였어요! 더 하고 싶은 말이 있다면 해주시고, 없다면 대화를 마쳐주세요.',chips:[]};}
